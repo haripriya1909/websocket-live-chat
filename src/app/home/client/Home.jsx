@@ -5,33 +5,32 @@ import io from "socket.io-client";
 let socket;
 
 export default function Home() {
-  // State management using React hooks
-  const [input, setInput] = useState(""); // State for the message input field
-  const [messages, setMessages] = useState([]); // State for storing chat messages
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState([]);
 
-  // useEffect hook runs when component mounts
   useEffect(() => {
-    // Initialize socket connection
-    socket = io(); // Connects to the Socket.IO server
+    // Connect to your deployed backend
+    socket = io("https://websocket-live-chat.onrender.com");
 
-    // Set up event listener for incoming messages
+    // Listen for incoming messages from server
     socket.on("message", (msg) => {
-      // When a message is received, add it to the messages array
-      setMessages((prev) => [...prev, msg]); // Spread operator to keep existing messages
+      setMessages((prev) => [...prev, msg]);
     });
 
-    // Cleanup function runs when component unmounts
     return () => {
-      socket.disconnect(); // Disconnect socket to prevent memory leaks
+      socket.disconnect();
     };
-  }, []); // Empty dependency array means this runs once on mount
+  }, []);
 
-  // Function to handle sending messages
   const sendMessage = () => {
     if (input.trim()) {
-      // Only send if message isn't empty
-      socket.emit("message", input); // Send message to server
-      setInput(""); // Clear input field after sending
+      // Show your message instantly in UI
+      setMessages((prev) => [...prev, `You: ${input}`]);
+
+      // Send message to server
+      socket.emit("message", input);
+
+      setInput("");
     }
   };
 
@@ -61,7 +60,8 @@ export default function Home() {
             border: "none",
             borderRadius: "4px",
             cursor: "pointer",
-          }}>
+          }}
+        >
           Send
         </button>
       </div>
@@ -73,8 +73,8 @@ export default function Home() {
           padding: "10px",
           height: "400px",
           overflowY: "auto",
-        }}>
-        {/* Map through messages array to display each message */}
+        }}
+      >
         {messages.map((msg, i) => (
           <div key={i} style={{ marginBottom: "10px" }}>
             {msg}
