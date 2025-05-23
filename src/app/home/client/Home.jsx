@@ -5,25 +5,33 @@ import io from "socket.io-client";
 let socket;
 
 export default function Home() {
-  const [input, setInput] = useState("");
-  const [messages, setMessages] = useState([]);
+  // State management using React hooks
+  const [input, setInput] = useState(""); // State for the message input field
+  const [messages, setMessages] = useState([]); // State for storing chat messages
 
+  // useEffect hook runs when component mounts
   useEffect(() => {
-    socket = io();
+    // Initialize socket connection
+    socket = io(); // Connects to the Socket.IO server
 
+    // Set up event listener for incoming messages
     socket.on("message", (msg) => {
-      setMessages((prev) => [...prev, msg]);
+      // When a message is received, add it to the messages array
+      setMessages((prev) => [...prev, msg]); // Spread operator to keep existing messages
     });
 
+    // Cleanup function runs when component unmounts
     return () => {
-      socket.disconnect();
+      socket.disconnect(); // Disconnect socket to prevent memory leaks
     };
-  }, []);
+  }, []); // Empty dependency array means this runs once on mount
 
+  // Function to handle sending messages
   const sendMessage = () => {
     if (input.trim()) {
-      socket.emit("message", input);
-      setInput("");
+      // Only send if message isn't empty
+      socket.emit("message", input); // Send message to server
+      setInput(""); // Clear input field after sending
     }
   };
 
@@ -66,6 +74,7 @@ export default function Home() {
           height: "400px",
           overflowY: "auto",
         }}>
+        {/* Map through messages array to display each message */}
         {messages.map((msg, i) => (
           <div key={i} style={{ marginBottom: "10px" }}>
             {msg}
