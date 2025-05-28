@@ -12,13 +12,34 @@ export default function Home() {
   const [messages, setMessages] = useState([]);
 
   useEffect(() => {
-    socket = io("https://websocket-live-chat.onrender.com");
+    // Connect to the server
+    const serverUrl =
+      process.env.NODE_ENV === "production"
+        ? "https://websocket-live-chat.onrender.com"
+        : "http://localhost:3000";
+
+    socket = io(serverUrl, {
+      withCredentials: true,
+      transports: ["websocket", "polling"],
+    });
+
+    socket.on("connect", () => {
+      console.log("Connected to server");
+    });
+
+    socket.on("connect_error", (error) => {
+      console.error("Connection error:", error);
+    });
 
     socket.on("receive_message", ({ sender, message }) => {
       setMessages((prev) => [...prev, `${sender}: ${message}`]);
     });
 
-    return () => socket.disconnect();
+    return () => {
+      if (socket) {
+        socket.disconnect();
+      }
+    };
   }, []);
 
   const joinRoom = () => {
@@ -82,8 +103,7 @@ export default function Home() {
             border: "none",
             borderRadius: "4px",
             cursor: "pointer",
-          }}
-        >
+          }}>
           Send
         </button>
       </div>
@@ -94,8 +114,7 @@ export default function Home() {
           padding: "10px",
           height: "400px",
           overflowY: "auto",
-        }}
-      >
+        }}>
         {messages.map((msg, i) => (
           <div key={i} style={{ marginBottom: "10px" }}>
             {msg}
