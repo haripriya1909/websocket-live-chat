@@ -1,88 +1,106 @@
 "use client";
-
 import { useEffect, useState } from "react";
-import { io } from "socket.io-client";
+import io from "socket.io-client";
+
+let socket;
 
 export default function Home() {
-  const [socket, setSocket] = useState(null);
-  const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState([]);
   const [username, setUsername] = useState("");
+  const [room, setRoom] = useState("");
+  const [joined, setJoined] = useState(false);
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState([]);
 
   useEffect(() => {
-    const socketInstance = io("http://localhost:3000");
-    setSocket(socketInstance);
+    socket = io("https://websocket-live-chat.onrender.com");
 
-    socketInstance.on("message", (msg) => {
-      setMessages((prev) => [...prev, msg]);
+    socket.on("receive_message", ({ sender, message }) => {
+      setMessages((prev) => [...prev, `${sender}: ${message}`]);
     });
 
-    return () => {
-      socketInstance.disconnect();
-    };
+    return () => socket.disconnect();
   }, []);
 
-  const sendMessage = (e) => {
-    e.preventDefault();
-    if (message.trim() && socket) {
-      socket.emit("message", message);
-      setMessage("");
+  const joinRoom = () => {
+    if (username && room) {
+      socket.emit("join_room", { room, username });
+      setJoined(true);
     }
   };
 
-  const handleUsernameSubmit = (e) => {
-    e.preventDefault();
-    if (username.trim() && socket) {
-      socket.emit("register_user", username);
+  const sendMessage = () => {
+    if (input.trim()) {
+      setMessages((prev) => [...prev, `You: ${input}`]);
+      socket.emit("send_message", { room, message: input, sender: username });
+      setInput("");
     }
   };
+
+  if (!joined) {
+    return (
+      <div style={{ padding: "20px", maxWidth: "600px", margin: "0 auto" }}>
+        <h2>Join Chat Room</h2>
+        <input
+          placeholder="Your name"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          style={{ marginRight: 10 }}
+        />
+        <input
+          placeholder="Room name"
+          value={room}
+          onChange={(e) => setRoom(e.target.value)}
+          style={{ marginRight: 10 }}
+        />
+        <button onClick={joinRoom}>Join</button>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
-      <div className="max-w-2xl mx-auto bg-white rounded-lg shadow p-6">
-        {!username ? (
-          <form onSubmit={handleUsernameSubmit} className="mb-4">
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter your username"
-              className="w-full p-2 border rounded"
-            />
-            <button
-              type="submit"
-              className="mt-2 w-full bg-blue-500 text-white p-2 rounded">
-              Join Chat
-            </button>
-          </form>
-        ) : (
-          <>
-            <div className="mb-4">
-              <h2 className="text-xl font-bold">Welcome, {username}!</h2>
-            </div>
-            <div className="h-96 overflow-y-auto mb-4 border rounded p-4">
-              {messages.map((msg, index) => (
-                <div key={index} className="mb-2">
-                  {msg}
-                </div>
-              ))}
-            </div>
-            <form onSubmit={sendMessage} className="flex gap-2">
-              <input
-                type="text"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Type a message..."
-                className="flex-1 p-2 border rounded"
-              />
-              <button
-                type="submit"
-                className="bg-blue-500 text-white px-4 py-2 rounded">
-                Send
-              </button>
-            </form>
-          </>
-        )}
+    <div style={{ padding: "20px", maxWidth: "600px", margin: "0 auto" }}>
+      <h1>💬 Room: {room}</h1>
+      <div style={{ marginBottom: "20px" }}>
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Type a message..."
+          style={{
+            padding: "8px",
+            marginRight: "10px",
+            width: "70%",
+            borderRadius: "4px",
+            border: "1px solid #ccc",
+          }}
+        />
+        <button
+          onClick={sendMessage}
+          style={{
+            padding: "8px 16px",
+            backgroundColor: "black",
+            color: "white",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+          }}
+        >
+          Send
+        </button>
+      </div>
+      <div
+        style={{
+          border: "1px solid #ccc",
+          borderRadius: "4px",
+          padding: "10px",
+          height: "400px",
+          overflowY: "auto",
+        }}
+      >
+        {messages.map((msg, i) => (
+          <div key={i} style={{ marginBottom: "10px" }}>
+            {msg}
+          </div>
+        ))}
       </div>
     </div>
   );
